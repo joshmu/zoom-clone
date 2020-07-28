@@ -1,11 +1,9 @@
 require('dotenv').config()
 const express = require('express')
 const app = express()
-const http = require('http')
-const server = new http.Server(app)
-
+const server = require('http').createServer(app)
 const io = require('socket.io')(server)
-const uuid = require('uuid')
+const { v4: uuidV4 } = require('uuid')
 
 const morgan = require('morgan')
 const cors = require('cors')
@@ -13,17 +11,32 @@ const cors = require('cors')
 app.set('view engine', 'ejs')
 app.use(express.static('public'))
 
+app.use(cors())
+app.use(morgan('tiny'))
+
+// routes
 app.get('/', (req, res) => {
-  res.redirect(`/${uuid.v4()}`)
+  res.redirect(`/${uuidV4()}`)
 })
 
 app.get('/:room', (req, res) => {
   res.render('room', { roomId: req.params.room })
 })
 
-app.use(cors())
-app.use(morgan('tiny'))
+// sockets
+io.on('connection', socket => {
+  console.log('socket connect')
+  socket.on('join-room', (roomId, userId) => {
+    console.log({ roomId, userId })
+    socket.join(roomId)
+    socket.to(roomId).broadcast.emit('user-connected', userId)
+  })
+
+  socket.on('disconnect', () => {
+    console.log('socket disconnect')
+  })
+})
 
 const port = process.env.PORT || 3000
 
-app.listen(port, () => console.log(`Listening on port: ${port}`))
+server.listen(port, () => console.log(`Listening on port: ${port}`))
