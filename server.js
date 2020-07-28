@@ -30,10 +30,10 @@ io.on('connection', socket => {
     console.log({ roomId, userId })
     socket.join(roomId)
     socket.to(roomId).broadcast.emit('user-connected', userId)
-  })
-
-  socket.on('disconnect', () => {
-    console.log('socket disconnect')
+    socket.on('disconnect', () => {
+      console.log('socket disconnect')
+      socket.to(roomId).broadcast.emit('user-disconnected', userId)
+    })
   })
 })
 
